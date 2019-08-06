@@ -183,21 +183,20 @@ if __name__ == '__main__':
 			writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 			headers=['URL','Status Code','Message']
 			writer.writerow(headers)
-	except:
-		red('Unable to write to %s' % args.output)
+			for r in results:
+				try:
+					url = r[0]
+					status_code = r[1]
+					message = r[2]
+				except Exception as e:
+					print(e)
+					continue
+				try:
+					writer.writerow([url,status_code,message])
+				except Exception as e:
+					print(e)
+					continue
+		green('Done!')
+	except Exception as e:
+		print(e)
 		quit()
-
-	for r in results:
-		try:
-			url = r[0]
-			status_code = r[1]
-			message = r[2]
-		except Exception as e:
-			print(e)
-			continue
-		try:
-			writer.writerow([url,status_code,message])
-		except Exception as e:
-			print(e)
-			continue
-	green('Done!')
