@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import requests,sys,argparse, csv
+import requests,sys,argparse, csv,os
 from time import gmtime, strftime
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -41,7 +41,6 @@ def red(string):
 def yellow(string):
 	log_time=strftime("%d/%m/%y, %H:%M:%S", gmtime())
 	print('['+log_time+']'+YELLOW(' >> ' )+string)
-
 
 def check_creds(host,creds):
 
@@ -123,16 +122,22 @@ def check_creds(host,creds):
 		return [url,status_code,UNKNOWN]
 
 def get_creds():
+	cur_dir=os.path.dirname(os.path.abspath(__file__))
+	if args.creds == None:
+		filename = cur_dir+'/creds.txt'
+	else:
+		filename = args.creds
 	creds=[]
 	try:
-		with open('creds.txt','r') as f:
+		with open(filename,'r') as f:
 			x=f.read()
 			y=x.split('\n')
 			creds=y
 		creds=list(filter(None,creds))
 		return creds
 	except:
-		red('This tool requires creds.txt with colon seperated username and passwords (admin:admin)')
+		red('This tool requires creds.txt, or a specified creds file, with colon seperated username and passwords (admin:admin)')
+		red('If you are specifying your own creds file, specify it with %s' % RED('--creds'))
 		quit()
 
 def get_targets():
@@ -153,6 +158,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="Topcat: Tomcat credential Checker",epilog='python3 topcat.py --targets urls.txt --output sensible_filename.csv')
 	parser.add_argument("-t", "--targets", metavar="", required=True, help="A file containing URLs/hostnames/IP Addresses")
 	parser.add_argument("-o", "--output", metavar="", required=True, help="File to output to (Only outputs as CSV)")
+	parser.add_argument("-c", "--creds", metavar="", help="Specify cred")
 	args = parser.parse_args()
 
 	targets = get_targets()
@@ -162,28 +168,36 @@ if __name__ == '__main__':
 
 	results = []
 
-# Originally, this was the other way around but it would just hammer the app. 
-#  This way, each request is spaced out because the credential list is looped over first.
-for cred in creds:
-	for target in targets:
+	# Originally, this was the other way around but it would just hammer the app. 
+	#  This way, each request is spaced out because the credential list is looped over first.
+	for cred in creds:
+		for target in targets:
+			try:
+				response=check_creds(target,cred)
+				results.append(response)
+			except KeyboardInterrupt:
+				yellow('CTRL+C detected!')
+				quit()
+	try:
+		with open(output,'w') as f:
+			writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+			headers=['URL','Status Code','Message']
+			writer.writerow(headers)
+	except:
+		red('Unable to write to %s' % args.output)
+		quit()
+
+	for r in results:
 		try:
-			response=check_creds(target,cred)
-			results.append(response)
-		except KeyboardInterrupt:
-			yellow('CTRL+C detected!')
-			quit()
-try:
-	with open(output,'w') as f:
-		writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-		headers=['URL','Status Code','Message']
-		writer.writerow(headers)
-		for r in results:
 			url = r[0]
 			status_code = r[1]
 			message = r[2]
+		except Exception as e:
+			print(e)
+			continue
+		try:
 			writer.writerow([url,status_code,message])
-except:
-	red('Unable to write to %s' % args.output)
-	quit()
-
-green('Done!')
+		except Exception as e:
+			print(e)
+			continue
+	green('Done!')
