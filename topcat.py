@@ -91,6 +91,8 @@ def check_creds(host,creds):
 	SERVICE_UNAVAILABLE = 'Service Unavailable'
 	SUCCESSFUL = 'Successful'
 	UNKNOWN = 'Unknown Error'
+	MOVED = 'Resource Moved'
+	REDIRECT = 'Redirected'
 
 	if status_code == 401:
 		red('%s: %s (%s) %s' % (url,RED(AUTHENTICATION_FAIL),status_code,auth))
@@ -112,10 +114,17 @@ def check_creds(host,creds):
 		red('%s: %s (%s) %s' % (url,RED(SERVICE_UNAVAILABLE),status_code,auth))
 		return [url,status_code,SERVICE_UNAVAILABLE]
 
-
 	elif status_code == 200:
 		green('%s: %s (%s) %s' % (url,GREEN(SUCCESSFUL),status_code,auth))
 		return [url,status_code,SUCCESSFUL]
+
+	elif status_code == 301:
+		yellow('%s: %s (%s) %s' % (url,YELLOW(MOVED),status_code,auth))
+		return [url,status_code,MOVED]
+
+	elif status_code == 301:
+		yellow('%s: %s (%s) %s' % (url,YELLOW(REDIRECT),status_code,auth))
+		return [url,status_code,REDIRECT]
 
 	else:
 		red('%s: %s'  % (UNKNOWN,status_code))
@@ -152,7 +161,6 @@ def get_targets():
 	except:
 		red('Couldnt open %s' % RED(args.targets))
 		quit()
-
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="Topcat: Tomcat credential Checker",epilog='python3 topcat.py --targets urls.txt --output sensible_filename.csv')
