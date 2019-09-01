@@ -44,6 +44,9 @@ def yellow(string):
 
 def check_creds(host,creds):
 
+	if host.endswith('/'):
+		host = host [:-1]
+
 	if host.endswith('/manager/html'):
 		pass
 	else:
